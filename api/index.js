@@ -1,30 +1,57 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const dotenv = require('dotenv');
-const waitlistRoutes = require('./routes/waitlist');
-
-// Load environment variables
-dotenv.config();
+const serverless = require('serverless-http');
+const waitlistRoutes = require('../routes/waitlist');
+require('dotenv').config();
 
 const app = express();
 
-// Middleware
-app.use(cors());
+// Configure CORS
+const allowedOrigins = [
+    'http://localhost:3000',
+    'https://lysa-frontend.vercel.app', // Replace with your production frontend URL
+];
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+}));
+
 app.use(express.json());
 
 // Routes
 app.use('/api/waitlist', waitlistRoutes);
 
-// Connect to MongoDB
-mongoose
-    .connect(process.env.MONGODB_URI, {
+// Connect to MongoDB Atlas (cached connection for serverless)
+let cachedDb = null;
+async function connectToDatabase() {
+    if (cachedDb) {
+        return cachedDb;
+    }
+    const db = await mongoose.connect(process.env.MONGODB_URI, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
-    })
-    .then(() => console.log('Connected to MongoDB'))
-    .catch((err) => console.error('MongoDB connection error:', err));
+    });
+    cachedDb = db;
+    console.log('Connected to MongoDB Atlas');
+    return db;
+}
 
-// Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Connect to MongoDB before handling requests
+app.use(async (req, res, next) => {
+    try {
+        await connectToDatabase();
+        next();
+    } catch (err) {
+        console.error('MongoDB connection error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Export as a serverless function
+module.exports = serverless(app);
