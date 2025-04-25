@@ -33,6 +33,11 @@ async function connectToDatabase() {
     if (cachedDb) {
         return cachedDb;
     }
+    // Debug: Log whether MONGODB_URI is defined
+    console.log('MONGODB_URI:', process.env.MONGODB_URI ? 'Defined' : 'Undefined');
+    if (!process.env.MONGODB_URI) {
+        throw new Error('MONGODB_URI environment variable is not defined');
+    }
     const db = await mongoose.connect(process.env.MONGODB_URI, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
