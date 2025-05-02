@@ -6,12 +6,13 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const waitlistRoutes = require('./routes/waitlist');
+const contactRoutes = require('./routes/contact'); 
 
 const app = express();
 
 // CORS configuration
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://lysa-dev.vercel.app'],
+  origin: ['http://localhost:3000', 'https://lysa-dev.vercel.app', 'https://lysa.vercel.app'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
@@ -31,6 +32,7 @@ mongoose.connect(process.env.MONGO_URI)
 
 // Routes
 app.use('/api/waitlist', waitlistRoutes);
+app.use('/api/contact', contactRoutes); 
 
 app.get('/', (req, res) => {
   res.json({ message: 'LYΣA UNIVERSE API' });
